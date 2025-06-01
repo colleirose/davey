@@ -1118,7 +1118,7 @@ impl DaveSession {
 
     let decryptor = self.decryptors.get(&uid);
     if decryptor.is_none() {
-      return Err(napi_error!("No decryptor found for that user"));
+      return Ok(false);
     }
 
     Ok(decryptor.unwrap().can_passthrough())
