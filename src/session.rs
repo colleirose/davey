@@ -809,7 +809,7 @@ impl DaveSession {
   /// Get the verification code of another member of the group.
   /// This is the equivalent of `generateDisplayableCode(getPairwiseFingerprint(0, userId), 45, 5)`.
   /// @see https://daveprotocol.com/#displayable-codes
-  #[napi(ts_return_type = "Promise<Buffer>")]
+  #[napi(ts_return_type = "Promise<string>")]
   pub fn get_verification_code(&self, user_id: String) -> AsyncTask<AsyncSessionVerificationCode> {
     let result = self.get_pairwise_fingerprint_internal(0, user_id);
     let (ok, err) = {
