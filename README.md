@@ -4,7 +4,7 @@
 
 A [Discord Audio & Video End-to-End Encryption (DAVE) Protocol](https://daveprotocol.com/) implementation using [OpenMLS](https://openmls.tech/) built with [NAPI-RS](https://napi.rs/).
 
-> Proper documentation and usage does not exist yet, review the [type definitions](https://github.com/Snazzah/davey/blob/master/index.d.ts) for available methods.
+> Proper documentation does not exist yet, but you can [read the usage document](https://github.com/Snazzah/davey/blob/master/docs/USAGE.md) and review the [type definitions](https://github.com/Snazzah/davey/blob/master/index.d.ts) for available methods.
 
 ```ts
 import { DAVESession, ProposalsOperationType, MediaType, Codec } from '@snazzah/davey';
