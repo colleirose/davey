@@ -8,7 +8,7 @@ import {
 
 // generateKeyFingerprint
 summary(() => {
-  bench('@snazzah/davey/generateKeyFingerprint', () =>
+  bench('@snazzah/davey/generateKeyFingerprint', async () =>
     do_not_optimize(generateKeyFingerprint(0, Buffer.alloc(33), '1234')),
   ).gc('inner');
   bench('libdave/generateKeyFingerprint', async () =>
