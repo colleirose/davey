@@ -906,6 +906,11 @@ impl DaveSession {
       }
       let uid = u64::from_be_bytes(user_id_bytes.unwrap());
 
+      // Exclude making a decryptor for ourselves
+      if uid == self.user_id_as_u64()? {
+        continue;
+      }
+
       let ratchet = self.get_key_ratchet(uid)?;
       let decryptor = self.decryptors.entry(uid).or_insert_with(|| {
         debug!("Creating decryptor for user {uid:?}");
