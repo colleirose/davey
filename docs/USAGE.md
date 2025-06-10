@@ -13,7 +13,7 @@ Your library should:
 - Handle voice op codes `CLIENTS_CONNECT` (11) and `CLIENT_DISCONNECT` (13)
 
 # Implementation
-Make sure to have `@snazzah/davey` as a peer/optional dependency. It should be at least at version `0.1.5`.
+Make sure to have `@snazzah/davey` as a peer/optional dependency. It should be at least at version `0.1.6`.
 
 Then, add these voice opcodes to any enum/mapping you have these for:
 ```ts
