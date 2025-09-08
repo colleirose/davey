@@ -84,6 +84,7 @@ def generate_pairwise_fingerprint(
 
 class Codec(Enum):
     """The type of codec being used."""
+
     unknown = 0
     opus = 1
     vp8 = 2
@@ -94,6 +95,7 @@ class Codec(Enum):
 
 class MediaType(Enum):
     """The type of media being referenced."""
+
     audio = 0
     video = 1
 
@@ -102,11 +104,13 @@ class ProposalsOperationType(Enum):
     The operation type of the proposals payload.
     See the [DAVE Protocol Whitepaper on opcode 27](https://daveprotocol.com/#dave_mls_proposals-27) for technical details.
     """
+
     append = 0
     revoke = 1
 
 class SessionStatus(Enum):
     """The status of the DAVE session."""
+
     inactive = 0
     pending = 1
     awaiting_response = 2
@@ -141,6 +145,7 @@ class CommitWelcome:
     Contains the commit and optional welcome for
     [dave_mls_commit_welcome (28)](https://daveprotocol.com/#dave_mls_commit_welcome-28).
     """
+
     commit: bytes
     welcome: Optional[bytes]
 
@@ -213,7 +218,7 @@ class DaveSession:
         """
         Set the external sender this session will recieve from.
         See the [DAVE Protocol Whitepaper on opcode 25](https://daveprotocol.com/#dave_mls_external_sender_package-25) for technical details.
-        
+
         :param external_sender_data: The serialized external sender data.
         """
         ...
@@ -232,7 +237,7 @@ class DaveSession:
         """
         Process proposals from the voice server.
         See the [DAVE Protocol Whitepaper on opcode 27](https://daveprotocol.com/#dave_mls_proposals-27) for technical details.
-        
+
         :param operation_type: The operation type of the proposals.
         :param proposals: The operation type of the proposals.
         :param expected_user_ids: The expected user IDs to come from the proposals.
@@ -243,7 +248,7 @@ class DaveSession:
         """
         Process a welcome message.
         See the [DAVE Protocol Whitepaper on opcode 30](https://daveprotocol.com/#dave_mls_welcome-30) for technical details.
-        
+
         :param welcome: The welcome message to process.
         """
         ...
@@ -251,7 +256,7 @@ class DaveSession:
         """
         Process a commit.
         See the [DAVE Protocol Whitepaper on opcode 29](https://daveprotocol.com/#dave_mls_announce_commit_transition-29) for technical details.
-        
+
         :param commit: The commit to process.
         """
         ...
@@ -260,7 +265,7 @@ class DaveSession:
         Get the verification code of another member of the group.
 
         See: https://daveprotocol.com/#displayable-codes
-        
+
         :param user_id: The ID of the user to get the verification code of.
         """
         ...
@@ -302,7 +307,7 @@ class DaveSession:
     def decrypt(self, user_id: int, media_type: MediaType, packet: bytes) -> bytes:
         """
         Decrypt an end-to-end encrypted packet.
-        
+
         :param user_id: The ID of the user to decrypt the packet for.
         :param media_type: The type of media to decrypt.
         :param packet: The packet to decrypt.
