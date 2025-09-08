@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "davey-python"
-version = "0.1.0-pre.2"
+version = "0.1.0-pre.3"
 dependencies = [
  "davey",
  "pyo3",
