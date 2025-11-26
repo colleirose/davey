@@ -231,7 +231,7 @@ pub fn process_frame_h265(processor: &mut OutboundFrameProcessor, frame: &[u8]) 
       processor.add_encrypted_bytes(&frame[nal_unit_start_index..next_nalu_start]);
     }
 
-    nalu_index_pair = next_nalu_index_pair
+    nalu_index_pair = next_nalu_index_pair;
   }
 
   true
