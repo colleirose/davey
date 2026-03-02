@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-## 0.1.2 - 2025-12-19
+## 0.1.4 - 2026-03-02
+
+Updated the internal OpenMLS dependency to fix a high severity vulnerability: https://github.com/advisories/GHSA-8x3w-qj7j-gqhf
+
+## 0.1.3 - 2025-12-19
 
 Support for H265, VP8, Vp9 and AV1 encryption.
 
