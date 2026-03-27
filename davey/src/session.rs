@@ -12,6 +12,7 @@ use openmls_rust_crypto::OpenMlsRustCrypto;
 use pyo3::prelude::*;
 use std::{borrow::Cow, collections::HashMap, fmt::Debug, num::NonZeroU16};
 use tracing::{debug, trace, warn};
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::{
   errors::*, generate_key_fingerprint, pairwise_fingerprints_internal,
@@ -92,12 +93,14 @@ pub struct CommitWelcome {
   pub welcome: Option<Vec<u8>>,
 }
 
+// We try to prevent needlessly copying or moving fields that could have secret key data
+// See https://benma.github.io/2020/10/16/rust-zeroize-move.html, https://docs.rs/zeroize/latest/zeroize/#stackheap-zeroing-notes
 pub struct DaveSession {
   protocol_version: NonZeroU16,
   provider: OpenMlsRustCrypto,
   ciphersuite: Ciphersuite,
   group_id: GroupId,
-  signer: SignatureKeyPair,
+  signer: Box<SignatureKeyPair>,
   credential_with_key: CredentialWithKey,
 
   external_sender: Option<ExternalSender>,
@@ -173,18 +176,29 @@ impl DaveSession {
     user_id: u64,
     channel_id: u64,
     key_pair: Option<&SigningKeyPair>,
-  ) -> Result<(Ciphersuite, GroupId, SignatureKeyPair, CredentialWithKey), InitError> {
+  ) -> Result<
+    (
+      Ciphersuite,
+      GroupId,
+      Box<SignatureKeyPair>,
+      CredentialWithKey,
+    ),
+    InitError,
+  > {
     let ciphersuite = dave_protocol_version_to_ciphersuite(protocol_version)?;
     let credential = BasicCredential::new(user_id.to_be_bytes().into());
     let group_id = GroupId::from_slice(&channel_id.to_be_bytes());
     let signer = if let Some(key_pair) = key_pair {
-      SignatureKeyPair::from_raw(
+      // There's an upcoming change to OpenMLS that will use the zeroize crate for SignatureKeyPair, 
+      // but it's not available yet. 
+      // See https://github.com/openmls/openmls/commit/a0ef4a4b174bc6fbba5967ffd1671586109d4508
+      Box::new(SignatureKeyPair::from_raw(
         ciphersuite.signature_algorithm(),
         key_pair.private.clone(),
         key_pair.public.clone(),
-      )
+      ))
     } else {
-      SignatureKeyPair::new(ciphersuite.signature_algorithm())?
+      Box::new(SignatureKeyPair::new(ciphersuite.signature_algorithm())?)
     };
     let credential_with_key = CredentialWithKey {
       credential: credential.into(),
@@ -205,7 +219,11 @@ impl DaveSession {
     }
 
     // Clear storage
-    self.provider.storage().values.write().unwrap().clear();
+    let mut writable = Box::new(self.provider.storage().values.write().unwrap());
+    for (_, val) in writable.iter_mut() {
+      val.zeroize();
+    }
+    writable.clear();
 
     self.status = SessionStatus::INACTIVE;
 
@@ -329,7 +347,7 @@ impl DaveSession {
       .build(
         self.ciphersuite,
         &self.provider,
-        &self.signer,
+        &*self.signer,
         self.credential_with_key.clone(),
       )?;
 
@@ -360,7 +378,7 @@ impl DaveSession {
 
     let group = MlsGroup::new_with_group_id(
       &self.provider,
-      &self.signer,
+      &*self.signer,
       &mls_group_create_config,
       self.group_id.clone(),
       self.credential_with_key.clone(),
@@ -502,7 +520,7 @@ impl DaveSession {
     }
 
     let (commit, welcome, _group_info) = group
-      .commit_to_pending_proposals(&self.provider, &self.signer)
+      .commit_to_pending_proposals(&self.provider, &*self.signer)
       .map_err(ProcessProposalsError::CommitToPendingProposalsFailed)?;
 
     self.status = SessionStatus::AWAITING_RESPONSE;
@@ -781,14 +799,16 @@ impl DaveSession {
       return Err(UpdateRatchetsError::NoEstablishedGroup);
     };
 
-    let base_secret = group
-      .export_secret(
-        self.provider.crypto(),
-        USER_MEDIA_KEY_BASE_LABEL,
-        &user_id.to_le_bytes(),
-        AES_GCM_128_KEY_BYTES,
-      )
-      .map_err(UpdateRatchetsError::ExportingSecretFailed)?;
+    let base_secret = Zeroizing::new(
+      group
+        .export_secret(
+          self.provider.crypto(),
+          USER_MEDIA_KEY_BASE_LABEL,
+          &user_id.to_le_bytes(),
+          AES_GCM_128_KEY_BYTES,
+        )
+        .map_err(UpdateRatchetsError::ExportingSecretFailed)?,
+    );
 
     trace!("Got base secret for user {:?}: {:?}", user_id, base_secret);
     Ok(HashRatchet::new(base_secret))
@@ -850,12 +870,18 @@ impl DaveSession {
     user_id: u64,
     media_type: MediaType,
     packet: &[u8],
-  ) -> Result<Vec<u8>, DecryptError> {
+  ) -> Result<Zeroizing<Vec<u8>>, DecryptError> {
     let Some(decryptor) = self.decryptors.get_mut(&user_id) else {
       return Err(DecryptError::NoDecryptorForUser);
     };
 
-    let mut frame = vec![0u8; Decryptor::get_max_plaintext_byte_size(media_type, packet.len())];
+    let mut frame = Zeroizing::new(vec![
+      0u8;
+      Decryptor::get_max_plaintext_byte_size(
+        media_type,
+        packet.len()
+      )
+    ]);
     let frame_length = decryptor.decrypt(media_type, packet, &mut frame)?;
 
     frame.resize(frame_length, 0);

@@ -10,7 +10,7 @@ pub use davey::{
 
 #[napi(js_name = "DAVESession")]
 pub struct DaveSession {
-  inner: Box<davey::DaveSession>,
+  inner: davey::DaveSession,
 }
 
 #[napi(object)]
@@ -38,9 +38,7 @@ impl DaveSession {
     let session = davey::DaveSession::new(protocol_version, uid, cid, signing_key_pair.as_ref())
       .map_err(|err| napi_error!("Failed to initialize session: {err:?}"))?;
 
-    Ok(Self {
-      inner: Box::new(session),
-    })
+    Ok(Self { inner: session })
   }
 
   fn common_init(
@@ -196,7 +194,7 @@ impl DaveSession {
       .create_key_package()
       .map_err(|err| napi_error!("Failed to create key package: {err:?}"))?;
 
-    Ok(Buffer::from(key_package))
+    Ok(Buffer::from(key_package.to_vec()))
   }
 
   /// Process proposals from the voice server.
@@ -387,7 +385,7 @@ impl DaveSession {
       .decrypt(uid, media_type, &packet)
       .map_err(|err| napi_error!("Failed to decrypt: {err:?}"))?;
 
-    Ok(Buffer::from(result))
+    Ok(Buffer::from(result.to_vec()))
   }
 
   /// Get decryption stats.

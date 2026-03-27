@@ -1,4 +1,5 @@
 use tracing::warn;
+use zeroize::Zeroizing;
 
 use crate::{
   cryptor::{AES_GCM_127_TRUNCATED_TAG_BYTES, MARKER_BYTES},
@@ -143,7 +144,7 @@ pub fn do_reconstruct(
   frame_index
 }
 
-/// A frame processor for inbound (recieving) frames.
+/// A frame processor for inbound (receiving) frames.
 pub struct InboundFrameProcessor {
   pub encrypted: bool,
   original_size: usize,
@@ -151,7 +152,7 @@ pub struct InboundFrameProcessor {
   unencrypted_ranges: Ranges,
   pub authenticated: Vec<u8>,
   pub ciphertext: Vec<u8>,
-  pub plaintext: Vec<u8>,
+  pub plaintext: Zeroizing<Vec<u8>>,
   pub tag: Vec<u8>,
 }
 
@@ -164,7 +165,7 @@ impl InboundFrameProcessor {
       unencrypted_ranges: Vec::new(),
       authenticated: Vec::new(),
       ciphertext: Vec::new(),
-      plaintext: Vec::new(),
+      plaintext: Vec::new().into(),
       tag: Vec::new(),
     }
   }
@@ -310,7 +311,7 @@ pub struct OutboundFrameProcessor {
   pub frame_codec: Codec,
   pub frame_index: usize,
   pub unencrypted_bytes: Vec<u8>,
-  pub encrypted_bytes: Vec<u8>,
+  pub encrypted_bytes: Zeroizing<Vec<u8>>,
   pub ciphertext_bytes: Vec<u8>,
   pub unencrypted_ranges: Ranges,
 }
@@ -321,7 +322,7 @@ impl OutboundFrameProcessor {
       frame_codec: Codec::UNKNOWN,
       frame_index: 0,
       unencrypted_bytes: Vec::new(),
-      encrypted_bytes: Vec::new(),
+      encrypted_bytes: Vec::new().into(),
       ciphertext_bytes: Vec::new(),
       unencrypted_ranges: Vec::new(),
     }

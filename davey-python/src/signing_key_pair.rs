@@ -1,9 +1,11 @@
 use pyo3::prelude::*;
+use zeroize::Zeroize;
 
 #[pyclass(get_all)]
-#[derive(Clone)]
+#[derive(Clone, Zeroize)]
 pub struct SigningKeyPair {
   pub private: Vec<u8>,
+  #[zeroize(skip)]
   pub public: Vec<u8>,
 }
 
@@ -12,6 +14,11 @@ impl SigningKeyPair {
   #[new]
   fn new(private: Vec<u8>, public: Vec<u8>) -> Self {
     Self { private, public }
+  }
+
+  fn __del__(&mut self) {
+    self.private.zeroize();
+    self.public.clear();
   }
 
   fn __repr__(&self) -> &'static str {
@@ -27,7 +34,7 @@ impl SigningKeyPair {
 impl From<davey::SigningKeyPair> for SigningKeyPair {
   fn from(skp: davey::SigningKeyPair) -> Self {
     SigningKeyPair {
-      private: skp.private,
+      private: skp.private.to_vec(),
       public: skp.public,
     }
   }

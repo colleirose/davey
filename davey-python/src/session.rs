@@ -38,7 +38,7 @@ impl DaveSession {
       NonZeroU16::new(protocol_version).ok_or(py_value_error!("Unsupported protocol version"))?;
 
     let signing_key_pair = key_pair.map(|kp| davey::SigningKeyPair {
-      private: kp.private.to_vec(),
+      private: kp.private.to_vec().into(),
       public: kp.public.to_vec(),
     });
 
@@ -67,7 +67,7 @@ impl DaveSession {
       NonZeroU16::new(protocol_version).ok_or(py_value_error!("Unsupported protocol version"))?;
 
     let signing_key_pair = key_pair.map(|kp| davey::SigningKeyPair {
-      private: kp.private.to_vec(),
+      private: kp.private.to_vec().into(),
       public: kp.public.to_vec(),
     });
 
@@ -157,7 +157,7 @@ impl DaveSession {
       .create_key_package()
       .map_err(|err| py_value_error!("Failed to create key package: {err:?}"))?;
 
-    Ok(key_package)
+    Ok(key_package.to_vec())
   }
 
   #[pyo3(signature = (operation_type, proposals, expected_user_ids=None))]
@@ -218,7 +218,7 @@ impl DaveSession {
       .encrypt(media_type, codec, packet)
       .map_err(|err| py_value_error!("Failed to encrypt: {err:?}"))?;
 
-    Ok(result.into_owned().to_vec())
+    Ok(result.into_owned())
   }
 
   fn encrypt_opus(&mut self, packet: &[u8]) -> PyResult<Vec<u8>> {

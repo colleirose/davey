@@ -11,6 +11,7 @@ use cipher::{
 };
 use core::marker::PhantomData;
 use ghash::{GHash, universal_hash::UniversalHash};
+use zeroize::Zeroizing;
 
 use aes::{Aes128, Aes256, cipher::consts::U12};
 
@@ -58,7 +59,7 @@ pub type Aes128Gcm = AesGcm<Aes128, U12>;
 pub type Aes256Gcm = AesGcm<Aes256, U12>;
 
 /// AES block.
-type Block = GenericArray<u8, U16>;
+type Block = Zeroizing<GenericArray<u8, U16>>;
 
 /// Counter mode with a 32-bit big endian counter.
 type Ctr32BE<Aes> = ctr::CtrCore<Aes, ctr::flavors::Ctr32BE>;

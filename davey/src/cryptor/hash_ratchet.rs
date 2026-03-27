@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use tracing::{debug, trace};
+use zeroize::Zeroizing;
 
 use crate::errors::{GetKeyError, InvalidLength};
 
@@ -7,13 +8,14 @@ use super::mlspp_crypto::derive_tree_secret;
 
 /// An implementation of libdave's HashRatchet.
 pub struct HashRatchet {
-  next_secret: Vec<u8>,
+  next_secret: Zeroizing<Vec<u8>>,
   next_generation: u32,
-  cache: HashMap<u32, (Vec<u8>, Vec<u8>)>,
+  // <generation id, (aead key, nonce)>
+  cache: HashMap<u32, (Zeroizing<Vec<u8>>, Vec<u8>)>,
 }
 
 impl HashRatchet {
-  pub fn new(secret: Vec<u8>) -> Self {
+  pub fn new(secret: Zeroizing<Vec<u8>>) -> Self {
     trace!("Creating hash ratchet with secret: {:x?}", secret);
     Self {
       next_generation: 0,
@@ -38,7 +40,8 @@ impl HashRatchet {
       generation,
       // RATCHET_CIPHERSUITE.aead_nonce_length()
       12,
-    )?;
+    )?
+    .to_vec();
     self.next_secret = derive_tree_secret(
       &self.next_secret,
       "secret",
@@ -86,9 +89,12 @@ mod tests {
 
   #[test]
   fn expected_result() {
-    let mut ratchet = HashRatchet::new(vec![
-      206, 221, 97, 177, 184, 161, 202, 105, 4, 101, 84, 40, 44, 247, 11, 123,
-    ]);
+    let mut ratchet = HashRatchet::new(
+      vec![
+        206, 221, 97, 177, 184, 161, 202, 105, 4, 101, 84, 40, 44, 247, 11, 123,
+      ]
+      .into(),
+    );
 
     let (key, nonce) = ratchet.get(0).expect("Expected success from ratchet");
     assert_eq!(

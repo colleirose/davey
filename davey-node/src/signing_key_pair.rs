@@ -1,5 +1,4 @@
 use napi::bindgen_prelude::Buffer;
-
 /// A signing key pair.
 #[napi(object)]
 pub struct SigningKeyPair {

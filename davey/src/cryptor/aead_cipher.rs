@@ -1,8 +1,6 @@
 use crate::aes_gcm::{AesGcm, KeyInit, aead::AeadMutInPlace, aes::Aes128};
-use sha2::digest::{
-  InvalidLength,
-  consts::{U8, U12},
-};
+use cipher::InvalidLength;
+use sha2::digest::consts::{U8, U12};
 
 type Aes128GcmModified = AesGcm<Aes128, U12, U8>;
 

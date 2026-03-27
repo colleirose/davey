@@ -9,13 +9,14 @@
 //!
 //! [1]: https://daveprotocol.com/#sender-key-derivation
 
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use openmls::prelude::{
   TlsSerialize, TlsSize, VLBytes,
   tls_codec::{self, Serialize},
 };
 use sha2::Sha256;
 use tracing::{debug, trace};
+use zeroize::Zeroizing;
 
 use crate::errors::InvalidLength;
 
@@ -27,21 +28,24 @@ pub struct KdfLabel {
 }
 
 // https://github.com/cisco/mlspp/blob/f7924fc87f77f60a0ea8488615c9fb46c7b386e6/lib/hpke/src/hkdf.cpp#L63
-fn hkdf_expand(prk: &[u8], info: &[u8], size: usize) -> Result<Vec<u8>, InvalidLength> {
-  let mut okm: Vec<u8> = vec![];
+fn hkdf_expand(prk: &[u8], info: &[u8], size: usize) -> Result<Zeroizing<Vec<u8>>, InvalidLength> {
+  let mut okm: Zeroizing<Vec<u8>> = vec![].into();
+  let mut ti: Zeroizing<Vec<u8>> = vec![].into();
   let mut i: u8 = 0;
-  let mut ti: Vec<u8> = vec![];
   while okm.len() < size {
     i += 1;
-    let mut block: Vec<u8> = vec![];
+    let mut block: Zeroizing<Vec<u8>> = vec![].into();
     block.append(&mut ti);
     block.extend_from_slice(info);
     block.push(i);
 
-    let mut hmac = Hmac::<Sha256>::new_from_slice(prk).map_err(|_| InvalidLength)?;
+    // https://benma.github.io/2020/10/16/rust-zeroize-move.html
+    let mut hmac = Hmac::<Sha256>::new_from_slice(&Box::new(prk)).map_err(|_| InvalidLength)?;
     hmac.update(&block);
-    ti = hmac.finalize().into_bytes().to_vec();
 
+    let boxed = Box::new(hmac.finalize());
+    let res = Zeroizing::new(boxed.as_bytes().0);
+    ti = res.to_vec().into();
     okm.extend_from_slice(&ti);
   }
 
@@ -55,7 +59,7 @@ fn expand_with_label(
   label: &str,
   context: &[u8],
   length: usize,
-) -> Result<Vec<u8>, InvalidLength> {
+) -> Result<Zeroizing<Vec<u8>>, InvalidLength> {
   let mls_label = format!("MLS 1.0 {label}");
   trace!(
     "KDF expand with label \"{}\" with context {:x?}",
@@ -81,7 +85,8 @@ pub fn derive_tree_secret(
   label: &str,
   generation: u32,
   length: usize,
-) -> Result<Vec<u8>, InvalidLength> {
+) -> Result<Zeroizing<Vec<u8>>, InvalidLength> {
+  // FIXME: Add an option to not log full secrets in trace; not very important, but worth doing some time
   debug!(
     "Derive tree secret with label \"{}\" in generation {} of length {}",
     label, generation, length
