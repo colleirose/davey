@@ -10,7 +10,7 @@ use super::mlspp_crypto::derive_tree_secret;
 pub struct HashRatchet {
   next_secret: Zeroizing<Vec<u8>>,
   next_generation: u32,
-  // <generation id, (aead key, nonce)>
+  // <generation ID, (AEAD key, nonce)>
   cache: HashMap<u32, (Zeroizing<Vec<u8>>, Vec<u8>)>,
 }
 

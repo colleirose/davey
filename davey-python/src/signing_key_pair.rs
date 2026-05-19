@@ -17,8 +17,13 @@ impl SigningKeyPair {
   }
 
   fn __del__(&mut self) {
-    self.private.zeroize();
+    // In this case, Python is deleting the keypair but it's not necessarily being dropped
+    // However, the data in it is no longer needed at this point.
+    self.zeroize();
+    self.private.clear();
     self.public.clear();
+    self.private.shrink_to_fit();
+    self.public.shrink_to_fit();
   }
 
   fn __repr__(&self) -> &'static str {
@@ -34,7 +39,7 @@ impl SigningKeyPair {
 impl From<davey::SigningKeyPair> for SigningKeyPair {
   fn from(skp: davey::SigningKeyPair) -> Self {
     SigningKeyPair {
-      private: skp.private.to_vec(),
+      private: skp.private,
       public: skp.public,
     }
   }

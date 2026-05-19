@@ -20,7 +20,7 @@ p256 = { version = "0.13" }
 rand = "0.8"
 digest = { version = "0.11.2", features = ["zeroize"] }
 sha2 = { version = "0.11", features = ["zeroize"] }
-hmac = { version = "0.13.0-rc.6", features = ["zeroize"] }
+hmac = { version = "0.13.0", features = ["zeroize"] }
 scrypt = { version = "0.11.0", default-features = false }
 zeroize = { version = "1.8.2", features = ["derive"] }
 num-derive = "0.4.2"

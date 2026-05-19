@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use std::num::NonZeroU16;
+use zeroize::Zeroize;
 
 use crate::signing_key_pair::SigningKeyPair;
 
@@ -37,22 +38,23 @@ impl DaveSession {
     let protocol_version =
       NonZeroU16::new(protocol_version).ok_or(py_value_error!("Unsupported protocol version"))?;
 
-    let signing_key_pair = key_pair.map(|kp| davey::SigningKeyPair {
-      private: kp.private.to_vec().into(),
-      public: kp.public.to_vec(),
-    });
+    let mut signing_key_pair = Box::new(key_pair.map(|kp| davey::SigningKeyPair {
+      private: kp.private,
+      public: kp.public,
+    }));
 
-    let session = davey::DaveSession::new(
-      protocol_version,
-      user_id,
-      channel_id,
-      signing_key_pair.as_ref(),
-    )
-    .map_err(|e| py_value_error!("Failed to initialize session: {:?}", e))?;
+    let session = Box::new(
+      davey::DaveSession::new(
+        protocol_version,
+        user_id,
+        channel_id,
+        (*signing_key_pair).as_ref(),
+      )
+      .map_err(|e| py_value_error!("Failed to initialize session: {:?}", e))?,
+    );
 
-    Ok(Self {
-      inner: Box::new(session),
-    })
+    signing_key_pair.zeroize();
+    Ok(Self { inner: session })
   }
 
   #[pyo3(signature = (protocol_version, user_id, channel_id, key_pair=None))]
@@ -66,10 +68,10 @@ impl DaveSession {
     let protocol_version =
       NonZeroU16::new(protocol_version).ok_or(py_value_error!("Unsupported protocol version"))?;
 
-    let signing_key_pair = key_pair.map(|kp| davey::SigningKeyPair {
-      private: kp.private.to_vec().into(),
-      public: kp.public.to_vec(),
-    });
+    let mut signing_key_pair = Box::new(key_pair.map(|kp| davey::SigningKeyPair {
+      private: kp.private,
+      public: kp.public,
+    }));
 
     self
       .inner
@@ -77,10 +79,11 @@ impl DaveSession {
         protocol_version,
         user_id,
         channel_id,
-        signing_key_pair.as_ref(),
+        (*signing_key_pair).as_ref(),
       )
       .map_err(|err| py_value_error!("Failed to re-initialize session: {err:?}"))?;
 
+    signing_key_pair.zeroize();
     Ok(())
   }
 
@@ -247,7 +250,7 @@ impl DaveSession {
       .decrypt(user_id, media_type, packet)
       .map_err(|err| py_value_error!("Failed to decrypt: {err:?}"))?;
 
-    Ok(result.to_owned().to_vec())
+    Ok(result.to_vec())
   }
 
   #[pyo3(signature = (user_id, media_type=None))]

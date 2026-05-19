@@ -189,8 +189,8 @@ impl DaveSession {
     let credential = BasicCredential::new(user_id.to_be_bytes().into());
     let group_id = GroupId::from_slice(&channel_id.to_be_bytes());
     let signer = if let Some(key_pair) = key_pair {
-      // There's an upcoming change to OpenMLS that will use the zeroize crate for SignatureKeyPair, 
-      // but it's not available yet. 
+      // There's an upcoming change to OpenMLS that will use the zeroize crate for SignatureKeyPair,
+      // but it's not available in the latest version of the crate yet.
       // See https://github.com/openmls/openmls/commit/a0ef4a4b174bc6fbba5967ffd1671586109d4508
       Box::new(SignatureKeyPair::from_raw(
         ciphersuite.signature_algorithm(),

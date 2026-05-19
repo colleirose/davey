@@ -86,13 +86,13 @@ pub fn derive_tree_secret(
   generation: u32,
   length: usize,
 ) -> Result<Zeroizing<Vec<u8>>, InvalidLength> {
-  // FIXME: Add an option to not log full secrets in trace; not very important, but worth doing some time
   debug!(
     "Derive tree secret with label \"{}\" in generation {} of length {}",
     label, generation, length
   );
   trace!("Input secret {:x?}", secret);
   let new_secret = expand_with_label(secret, label, &generation.to_be_bytes(), length)?;
+  // FIXME: Add an option to not log full secrets in trace; not very important, but worth doing some time
   trace!("Derived secret {:x?}", new_secret);
   Ok(new_secret)
 }

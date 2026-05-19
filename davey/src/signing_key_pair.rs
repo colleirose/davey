@@ -14,8 +14,6 @@ impl SigningKeyPair {
   /// Generate a signing key pair.
   pub fn generate() -> Self {
     // https://benma.github.io/2020/10/16/rust-zeroize-move.html
-
-    // The signing key pair contains the secret private key value
     let signing_key = Box::new(SigningKey::random(&mut OsRng));
     let private_key_bytes = Box::new(Zeroizing::new(signing_key.to_bytes()));
 
